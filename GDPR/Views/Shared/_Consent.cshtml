@@ -1,0 +1,98 @@
+﻿@*
+    https://docs.microsoft.com/en-us/aspnet/core/security/gdpr?view=aspnetcore-3.1
+
+    Requirements:
+    -------------
+    services.Configure<CookiePolicyOptions>
+    app.UseCookiePolicy();
+    jquery & bootstrap
+    _Layout.cshtml: <partial name="_CookieConsentPartial" />
+    TagHelpers must be activated in _ViewImports.cshtml
+*@
+
+
+@using Microsoft.AspNetCore.Http.Features
+
+@{
+    var consentFeature = Context.Features.Get<ITrackingConsentFeature>();
+    var showBanner = !consentFeature?.CanTrack ?? false;
+    var cookieString = consentFeature?.CreateConsentCookie();
+
+    // DON'T show banner if consent is already accepted
+    if (Context.Request.Cookies.ContainsKey("CookieConsent") && Context.Request.Cookies["CookieConsent"] == "Accepted")
+    { showBanner = false; }
+
+    // DON'T show banner if the Privacy page is shown
+    if (ViewContext?.ActionDescriptor?.AttributeRouteInfo?.Template == "privacy")
+    { showBanner = false; }
+}
+
+@if (showBanner)
+{
+    <div class="modal fade pt-5" id="myModal">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content p-20">
+
+                <div class="modal-header border-0">
+                    <h4 class="modal-title">Cookie Consent</h4>
+                    <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
+                </div>
+
+                <div class="modal-body text-justify">
+                    This website use cookies to improve your user experience.
+                    We have updated our cookie policy to reflect changes in the law on cookies and tracking technologies used on websites.
+                    If you continue on this website, you will be providing your consent to our use of cookies.
+                </div>
+
+                <div class="modal-footer border-0">
+                    <a href="@Url.Content("~/privacy")" target="_blank" type="button" class="btn btn-info">Privacy Info</a>
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal" data-cookie-string="@cookieString">Accept</button>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script type="text/javascript">
+
+        (function () {
+
+            var button = document.querySelector("#myModal button[data-cookie-string]");
+
+            button.addEventListener("click", function (event) {
+                document.cookie = button.dataset.cookieString;  // this cookie data is not used, instead custom cookie data is added below
+                // set a cookie that will expire in 3 days (js-cookie.js is required )
+                Cookies.set('CookieConsent', 'Accepted', { expires: 3 })
+            }, false);
+
+        })();
+
+        function scriptToExecute() {
+            $('#myModal').modal('show');
+        }
+
+        function runWhenReady() {
+
+            console.log("1");
+
+            if (window.$)
+                // JQuery is up and ready :)
+                scriptToExecute();
+            else
+                // JQuery has NOT been loaded :(
+                setTimeout(runWhenReady, 100);
+        }
+
+        runWhenReady();
+
+    </script>
+}
+else
+{
+    // showBanner is false
+}

@@ -1,0 +1,102 @@
+﻿@*
+    https://docs.microsoft.com/en-us/aspnet/core/security/gdpr?view=aspnetcore-3.1
+
+    Requirements:
+    -------------
+    services.Configure<CookiePolicyOptions>
+    app.UseCookiePolicy();
+    jquery & bootstrap
+    _Layout.cshtml: <partial name="_CookieConsentPartial" />
+    TagHelpers must be activated in _ViewImports.cshtml
+*@
+
+
+@using Microsoft.AspNetCore.Http.Features
+
+@{
+    var consentFeature = Context.Features.Get<ITrackingConsentFeature>();
+    var showBanner = !consentFeature?.CanTrack ?? false;
+    var cookieString = consentFeature?.CreateConsentCookie();
+
+    // DON'T show banner if consent is already accepted
+    if (Context.Request.Cookies.ContainsKey("CookieConsent") && Context.Request.Cookies["CookieConsent"] == "Accepted")
+    { showBanner = false; }
+
+    // DON'T show banner if the Privacy page is shown
+    if (ViewContext?.ActionDescriptor?.AttributeRouteInfo?.Template == "privacy")
+    { showBanner = false; }
+}
+
+@if (showBanner)
+{
+    <!-- start end top bottom -->
+    <div class="offcanvas offcanvas-bottom" data-bs-scroll="true" data-bs-backdrop="true" tabindex="-1" id="offcanvas_consent" aria-labelledby="offcanvasExampleLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasExampleLabel">Offcanvas</h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div>
+                Some text as placeholder. In real life you can have the elements you have chosen. Like, text, images, lists, etc.
+            </div>
+            <div class="dropdown mt-3">
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown">
+                    Dropdown button
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <li><a class="dropdown-item" href="#">Action</a></li>
+                    <li><a class="dropdown-item" href="#">Another action</a></li>
+                    <li><a class="dropdown-item" href="#">Something else here</a></li>
+                </ul>
+            </div>
+
+            <hr />
+
+            <button type="button" class="btn btn-success" data-cookie-string="@cookieString" data-bs-toggle="offcanvas" data-bs-target="#offcanvasTop" aria-controls="offcanvasTop">Accept</button>
+        </div>
+    </div>
+
+
+    <script type="text/javascript">
+
+        (function () {
+
+            var button = document.querySelector("#offcanvas_consent button[data-cookie-string]");
+
+            button.addEventListener("click", function (event) {
+                document.cookie = button.dataset.cookieString;  // this cookie data is not used, instead custom cookie data is added below
+                // set a cookie that will expire in 3 days (js-cookie.js is required )
+                Cookies.set('CookieConsent', 'Accepted', { expires: 3 })
+            }, false);
+
+        })();
+
+        function scriptToExecute() {
+            var myOffcanvas = document.getElementById('offcanvas_consent');
+            console.log(myOffcanvas);
+            var bsOffcanvas = new bootstrap.Offcanvas(myOffcanvas);
+            console.log(bsOffcanvas);
+            bsOffcanvas.show();
+        }
+
+        function runWhenReady() {
+
+            console.log("1");
+
+            if (window.$)
+                // JQuery is up and ready :)
+                scriptToExecute();
+            else
+                // JQuery has NOT been loaded :(
+                setTimeout(runWhenReady, 100);
+        }
+
+        runWhenReady();
+
+    </script>
+}
+else
+{
+    // showBanner is false
+    
+}
